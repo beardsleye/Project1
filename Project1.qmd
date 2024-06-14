@@ -23,6 +23,7 @@ Year<- as.character(1900+Year_digits)
 Course<-substr(Data_1$Enrollment,1,7)
 Data_1$Course_Year<-paste0(Course,Year)
 
+Data_1
 #Identify rows for counties
 County_entries<-grep(pattern = ", \\w\\w", Data_1$Area_name)
 
@@ -34,6 +35,20 @@ class(County) <- c("County", class(County))
 State<-Data_1[-County_entries,]
 State
 class(Non_County) <- c("State", class(Non_County))
+
+#Create State variable for county
+County$State_abbr<-substr(County$Area_name, nchar(County$Area_name)-2, nchar(County$Area_name))
+
+#Create Division for state
+mutate(State, Division = ifelse(Area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
+ifelse(Area_name %in% c("NEW JERSEY", "NEW YORK", "PENNSYLVANIA"), "MID ATLANTIC",
+ifelse(Area_name %in% c("ILLINOIS", "INDIANA", "MICHIGAN", "OHIO", "WISCONSIN"), "EAST NORTH CENTRAL",
+ifelse(Area_name %in% c("IOWA", "KANSAS", "MINNESOTA","MISSOURI", "NEBRASKA", "NORTH DAKOTA", "SOUTH DAKOTA"), "WEST NORTH CENTRAL",
+ifelse(Area_name %in% c("DELAWARE", "FLORIDA", "GEORGIA", "MARYLAND", "NORTH CAROLINA", "SOUTH CAROLINA", "VIRGINIA", "DISTRICT OF COLUMBIA", "WEST VIRGINIA"), "SOUTH ATLANTIC",
+ifelse(Area_name %in% c("ALABAMA", "KENTUCKY", "MISSISSIPPI", "TENNESSEE"), "EAST SOUTH CENTRAL",
+ifelse(Area_name %in% c("ARKANSAS", "LOISIANA", "OKLAHOMA", "TEXAS"), "WEST SOUTH CENTRAL",
+ifelse(Area_name %in% c("ARIZONA", "COLORADO", "IDAHO", "MONTANTA", "NEVADA", "NEW MEXICO", "UTAH", "WYOMING"), "MOUNTAIN",
+ifelse(Area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"), "PACIFIC", "ERROR"))))))))))
 
 ```
 
