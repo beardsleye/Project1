@@ -1,0 +1,39 @@
+#Project 1
+## By: Emma Beardsley and Kevin Krupa
+
+```{r Libraries}
+library(tidyverse)
+```
+
+#Data Processing
+```{r Data Processing}
+#Read in data and create tibble
+save(EDU01a, file="EDU01a")
+EDU01A<-as_tibble(EDU01a) 
+
+#Make data set with area name, STCOU, Enrollment
+Data_1<-EDU01A |>
+  select(Area_name,STCOU,ends_with("D")) |>
+  pivot_longer(cols= 3:12, names_to = "Enrollment", values_to = "Enrollment_Number") 
+Data_1
+
+#Create Column that has course and year together
+Year_digits<-as.numeric(substr(Data_1$Enrollment, 8, 9))
+Year<- as.character(1900+Year_digits)
+Course<-substr(Data_1$Enrollment,1,7)
+Data_1$Course_Year<-paste0(Course,Year)
+
+#Identify rows for counties
+County_entries<-grep(pattern = ", \\w\\w", Data_1$Area_name)
+
+#Create,output, and give class to County and State data sets
+County<-Data_1[County_entries,]
+County
+class(County) <- c("County", class(County))
+
+State<-Data_1[-County_entries,]
+State
+class(Non_County) <- c("State", class(Non_County))
+
+```
+
