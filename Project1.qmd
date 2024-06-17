@@ -8,8 +8,9 @@ library(tidyverse)
 #Data Processing
 ```{r Data Processing}
 #Read in data and create tibble
-save(EDU01a, file="EDU01a")
-EDU01A<-as_tibble(EDU01a) 
+#save(EDU01a, file="EDU01a.csv")
+EDU01A <- read_csv("../EDU01a.csv")
+EDU01A<-as_tibble(EDU01A) 
 
 #Make data set with area name, STCOU, Enrollment
 Data_1<-EDU01A |>
@@ -33,7 +34,18 @@ class(County) <- c("County", class(County))
 
 State<-Data_1[-County_entries,]
 State
-class(Non_County) <- c("State", class(Non_County))
-
+class(State) <- c("State", class(State))
 ```
 
+# Task 3: Generic Function for Summarizing
+```{r}
+plot_state <- function(data, var_name, group) {
+  data |>
+
+             group_by(get(group)) |>
+             summarize(mean_vals = mean(get(var_name)))
+}
+
+plot_state(data = County, var_name = "Enrollment_Number", group = "Area_name")
+
+```
