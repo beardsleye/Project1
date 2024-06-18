@@ -1,22 +1,16 @@
-#Project 1
-## By: Emma Beardsley and Kevin Krupa
+#Project 1 \## By: Emma Beardsley and Kevin Krupa
 
-```{r Libraries}
+```{r Libraries,warning=FALSE}
 library(tidyverse)
 ```
 
 #Data Processing: Data Set 1
-```{r Data Processing}
-#Read in data and create tibble
-read_csv(file = "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv")
-save(EDU01a, file="EDU01a")
-EDU01A<-as_tibble(EDU01a) 
 
-#Make data set with area name, STCOU, Enrollment
-Data_1<-EDU01A |>
+```{r Data Processing, warning=FALSE, show_col_types = FALSE, message=FALSE}
+#Read and make data set with area name, STCOU, Enrollment
+Data_1<-as_tibble(read_csv(file = "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv")) |>
   select("area_name"=Area_name,STCOU,ends_with("D")) |>
   pivot_longer(cols= 3:12, names_to = "Enrollment", values_to = "Enrollment_Number") 
-Data_1
 
 #Create Column that has course and year together
 Year_digits<-as.numeric(substr(Data_1$Enrollment, 8, 9))
@@ -24,24 +18,21 @@ Year<- as.character(1900+Year_digits)
 Course<-substr(Data_1$Enrollment,1,7)
 Data_1$Course_Year<-paste0(Course,Year)
 
-Data_1
 #Identify rows for counties
 County_entries<-grep(pattern = ", \\w\\w", Data_1$area_name)
 
 #Create,output, and give class to County and State data sets
 County<-Data_1[County_entries,]
-County
 class(County) <- c("County", class(County))
 
 State<-Data_1[-County_entries,]
-State
-class(Non_County) <- c("State", class(Non_County))
+class(State) <- c("State", class(State))
 
 #Create State variable for county
 County$State_abbr<-substr(County$area_name, nchar(County$area_name)-2, nchar(County$area_name))
 
 #Create Division for state
-mutate(State, Division = ifelse(area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
+State<-mutate(State, Division = ifelse(area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
 ifelse(area_name %in% c("NEW JERSEY", "NEW YORK", "PENNSYLVANIA"), "MID ATLANTIC",
 ifelse(area_name %in% c("ILLINOIS", "INDIANA", "MICHIGAN", "OHIO", "WISCONSIN"), "EAST NORTH CENTRAL",
 ifelse(area_name %in% c("IOWA", "KANSAS", "MINNESOTA","MISSOURI", "NEBRASKA", "NORTH DAKOTA", "SOUTH DAKOTA"), "WEST NORTH CENTRAL",
@@ -51,21 +42,33 @@ ifelse(area_name %in% c("ARKANSAS", "LOISIANA", "OKLAHOMA", "TEXAS"), "WEST SOUT
 ifelse(area_name %in% c("ARIZONA", "COLORADO", "IDAHO", "MONTANTA", "NEVADA", "NEW MEXICO", "UTAH", "WYOMING"), "MOUNTAIN",
 ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"), "PACIFIC", "ERROR"))))))))))
 
+County
+State
+
 ```
+
 # Combining Data Functions: Data Set 2
-```{r Combing Data Functions}
-combine_function<-function(url = "https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv" , default_var_name= "Enrollment"){
-  Data_2<-as_tibble(read_csv(file="https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"))() |>
-  function_step_1_2<-function(Data_2, Enrollment){
-    select("area_name"=Area_name,STCOU,ends_with("D")) () |>
-  pivot_longer(cols= 3:12, names_to = "Enrollment", values_to = "Enrollment_Number")()} |>
-  function_step_3<-function(Data_2, Enrollment){
-    mutate(Course_Year=paste0(substr(Enrollment,1,7),as.character(1900+(as.numeric(substr(Enrollment, 8, 9))))))()} |>
-  function_step_5<-function(Data_2, Enrollment){
-    County2<-Data_2[grep(pattern = ", \\w\\w", area_name),] |>
-    mutate(State_abbr=substr(area_name, nchar(area_name)-2, nchar(area_name)))()} |>
-  function_step_6<-function(Data, Enrollment){
- State2<-Data_2[-grep(pattern = ", \\w\\w", area_name),] |>
+
+```{r Combing Data Functions, warning=FALSE, show_col_types = FALSE, message=FALSE}
+url<-"https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
+combine_function<-function(url , default_var_name= "Enrollment"){
+  #read in data
+  Data<-as_tibble(read_csv(file= url)) |>
+#step 1 and 2
+    select("area_name"=Area_name,STCOU,ends_with("D")) |>
+  pivot_longer(cols= 3:12, names_to = "Enrollment", values_to = "Enrollment_Number") |>
+ #step 3
+    mutate(Course_Year=paste0(substr(Enrollment,1,7),as.character(1900+(as.numeric(substr(Enrollment, 8, 9)))))) |>
+    collect()
+  
+#step 5
+    County<-Data[grep(pattern = ", \\w\\w", Data$area_name),] |>
+    mutate(State_abbr=substr(area_name, nchar(area_name)-2, nchar(area_name))) |>
+      collect()
+    class(County) <- c("County", class(County))
+
+#step 6
+ State<-Data[-grep(pattern = ", \\w\\w", Data$area_name),] |>
     mutate(Division = ifelse(area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
 ifelse(area_name %in% c("NEW JERSEY", "NEW YORK", "PENNSYLVANIA"), "MID ATLANTIC",
 ifelse(area_name %in% c("ILLINOIS", "INDIANA", "MICHIGAN", "OHIO", "WISCONSIN"), "EAST NORTH CENTRAL",
@@ -74,9 +77,31 @@ ifelse(area_name %in% c("DELAWARE", "FLORIDA", "GEORGIA", "MARYLAND", "NORTH CAR
 ifelse(area_name %in% c("ALABAMA", "KENTUCKY", "MISSISSIPPI", "TENNESSEE"), "EAST SOUTH CENTRAL",
 ifelse(area_name %in% c("ARKANSAS", "LOISIANA", "OKLAHOMA", "TEXAS"), "WEST SOUTH CENTRAL",
 ifelse(area_name %in% c("ARIZONA", "COLORADO", "IDAHO", "MONTANTA", "NEVADA", "NEW MEXICO", "UTAH", "WYOMING"), "MOUNTAIN",
-ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"), "PACIFIC", "ERROR")))))))))) ()
-  }  
- return(County2, State2) 
+ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"), "PACIFIC", "ERROR")))))))))) |>
+   collect()
+ class(State) <- c("State", class(State))
+ 
+ return(list(County,State))
+
 }
 ```
 
+# Calling it together
+
+```{r Combine Data, warning=FALSE, show_col_types = FALSE, message=FALSE}
+#First Data set with function:
+urla<- "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
+Data_a<-combine_function(urla, default_var_name = "Enrollment")
+
+urlb<- "https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
+Data_b<-combine_function(urlb, default_var_name = "Enrollment")
+
+
+Counties<-bind_rows(Data_a[[1]],Data_b[[1]])
+class(Counties) <- c("Counties", class(Counties))
+Counties
+
+States<-bind_rows(Data_a[[2]],Data_b[[2]])
+class(States) <- c("States", class(States))
+States
+```
