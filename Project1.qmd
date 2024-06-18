@@ -166,23 +166,32 @@ Now, for the County class data set, we will produce a similar function, but with
 Within this function, we will find the overall mean of the statistic for each `Area_name` and sort the values from largest to smallest if "top" is specified, or smallest to largest if "bottom" is specified. We will obtain the top or bottom *x* number of area names from the previous step where *x* is one of the arguments the user can specify. Lastly, we will fulter the data for this state to noly include the area name's from the previous step. This last step will be the data we will use to plot. 
 
 ```{r}
-plot.county <- function(data, var_name = "Enrollment_Number", state = " NC", group = "top", number = 5){
+plot.county <- function(data, var_name = "Enrollment_Number", state = "NC",
+                        group = "top", number = 5){
+  state <- paste0(" ", state)
+  
+  #Only include observations from specified state
   subset_data <- data |>
     filter(State_abbr == state)
   
+  #Obtain overall mean for statistic for each area name and sort 
   values <- subset_data |>
     group_by(area_name) |>
     summarize(value = mean(get(var_name), na.rm = TRUE), .groups = 'drop') |>
     arrange(if (group == "top") desc(value) else value)
   
+  #Get the names of counties we want to look at
   counties <- values |>
     head(number) |>
     pull(area_name)
   
+  #Obtain the data we use to plot
   plot_data <- subset_data |>
     filter(area_name %in% counties)
   
-  ggplot(plot_data, aes(x = Course_Year, y = get(var_name), color = area_name, group = area_name)) +
+  #Create the line plot
+  ggplot(plot_data, aes(x = Course_Year, y = get(var_name), color = area_name,
+                        group = area_name)) +
     geom_line() +
     labs(title = "Enrollment Number Across Years by County in State",
          x = "Year",
