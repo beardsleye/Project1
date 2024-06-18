@@ -1,11 +1,24 @@
-#Project 1 
-## By: Emma Beardsley and Kevin Krupa
+---
+title: "Project 1"
+author: "Emma Beardsley and Kevin Krupa"
+format:
+  html:
+    toc: TRUE
+    toc-depth: 2
+---
+
+# Packages
+
+For this project, we will be working with raw data to perform cleaning, wrangling, and operations. We will work through this primarily using the tidyverse library, so we will read in this package first.
 
 ```{r Libraries,warning=FALSE}
 library(tidyverse)
 ```
 
-#Data Processing: Data Set 1
+# Data Processing: Data Set 1
+
+As mentioned above, we will be using multiple `.csv` files that contain information obtained from the census bureau. The data is from 2010, and our first goal will be to read in one of these data sets and perform some necessary cleaning/wrangling. Comments will be written throughout the code below, to detail the operations performed on the raw data.
+
 ```{r Data Processing, warning=FALSE, show_col_types = FALSE, message=FALSE}
 #Read and make data set with area name, STCOU, Enrollment
 Data_1<-as_tibble(read_csv(file = "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv")) |>
@@ -46,7 +59,12 @@ County
 State
 ```
 
+Now that we have successfully parsed through the data set, as described in the project 1 file, we will perform this on another data set. Though it will be done differently
+
 # Combining Data Functions: Data Set 2
+
+For the second raw dataset, we will parse through the data as done before; however, it will be done by using functions to perform each of the steps you saw in the previous section.
+
 ```{r Combing Data Functions, warning=FALSE, show_col_types = FALSE, message=FALSE}
 url<-"https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
 combine_function<-function(url , default_var_name= "Enrollment"){
@@ -86,51 +104,66 @@ ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"
 }
 ```
 
+Now that we have successfully created this function, we will now combine the two data sets together.
+
 # Calling it together
+
+In this section, we will use our newly created data processing function to read in and parse through the two raw data sets. After calling this function twice, we will then create a new function to combine the two data sets, and create a list of the final two data sets we are looking for.
 
 ```{r Combine Data, warning=FALSE, show_col_types = FALSE, message=FALSE}
 #Set a and b
 urla<- "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
 urlb<- "https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
+Data_a<-combine_function(urla, default_var_name = "Enrollment")
+Data_b<-combine_function(urlb, default_var_name = "Enrollment")
 
 #Combine the data for Counties and States
-function(urla, urlb){
-  Data_a<-combine_function(urla, default_var_name = "Enrollment")
-  Data_b<-combine_function(urlb, default_var_name = "Enrollment")
+final_combine_function <- function(a, b){
+  Counties <- bind_rows(a[[1]], b[[1]])
+  class(Counties) <- c("Counties", class(Counties))
 
-Counties<-bind_rows(Data_a[[1]],Data_b[[1]])
-class(Counties) <- c("Counties", class(Counties))
-
-States<-bind_rows(Data_a[[2]],Data_b[[2]])
-class(States) <- c("States", class(States))
-return(list(Counties, States))
+  States <- bind_rows(a[[2]], b[[2]])
+  class(States) <- c("States", class(States))
+  
+  return(list(Counties, States))
 }
 
 Counties
 States
 ```
 
+Now that we have successfully combined the raw data and created an object to hold the two new data sets, we can now look to create functions for summarizing
+
 # Task 3: Generic Function for Summarizing
+
+Since we have our list object with the two class data sets (County and State), we can look to create functions that produce plots for summarizing important enrollment information. The first function we will create is for the state class data set. In this function we will produce a plot that expresses the mean value of enrollment across the years for each division. On the x-axis, will be the numeric year value; on the y-axis, will be the mean enrollment number for each division and numeric year. This function will also remove the "ERROR" setting of Division.
+
 ```{r}
 
 plot.state <- function(data, var_name = "Enrollment_Number") {
+  # Remove the "ERROR" Division setting
   subset_data <- data |>
     filter(Division != "ERROR")
   
+  #Obtain the mean enrollment number for each division and numeric year
   mean_values <- subset_data |>
     group_by(Course_Year, Division) |>
     summarize(mean_value = mean(get(var_name), na.rm = TRUE), .groups = 'drop')
   
-  ggplot(mean_values, aes(x = Course_Year, y = mean_value, color = Division, group = Division)) +
+  #Create the line plot
+  ggplot(mean_values, aes(x = Course_Year, y = mean_value, color = Division,
+                          group = Division)) +
     geom_line() +
     labs(title = paste("Mean", var_name, "Across Years by Division"),
          x = "Year",
          y = paste("Mean", var_name))
 }
 
-plot.state(data = State, var_name = "Enrollment_Number")
-
 ```
+
+Now, for the County class data set, we will produce a similar function, but with more flexibility. The function will allow the user to input several different arguments: Specify the state of interest (default value will be "NC"); Determine whether we want to look at the "top" or "bottom" counties (default value of "top"); Determine how many of the "top" or "bottom" counties we want to look at (default value of 5).
+
+Within this function, we will find the overall mean of the statistic for each `Area_name` and sort the values from largest to smallest if "top" is specified, or smallest to largest if "bottom" is specified. We will obtain the top or bottom *x* number of area names from the previous step where *x* is one of the arguments the user can specify. Lastly, we will fulter the data for this state to noly include the area name's from the previous step. This last step will be the data we will use to plot. 
 
 ```{r}
 plot.county <- function(data, var_name = "Enrollment_Number", state = " NC", group = "top", number = 5){
@@ -155,17 +188,66 @@ plot.county <- function(data, var_name = "Enrollment_Number", state = " NC", gro
          x = "Year",
          y = "Enrollment Number")
 }
-
-plot.county(data = County)
-
 ```
 
 # Putting It All Together
 
+In the last section of this report, we will be putting all of the previous sections together to show the usage of our functions across multiple raw data sets. To start, we will run our data processing function on the two census bureau data url's we used above. Then, we will run our combination function to combine these two raw data sets to create one object that holds our two class data sets (County and State). 
+
 ```{r}
+urla <- "https//www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
+EDU01a <- combine_function(urla, default_var_name = "Enrollment")
+
+urlb <- "https//www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
+EDU01b <- combine_function(urlb, default_var_name = "Enrollment")
+
+EDU01 <- final_combine_function(EDU01a, EDU01b)
+EDU01
+```
+
+Now, we will make use of our summarizing functions that creates plots. We run these functions multiple times, specifying different values to our arguments to check the flexibility of the functions.
+
+```{r}
+County <- EDU01[[1]]
+State <- EDU01[[2]]
+
 plot.state(data = State)
 plot.county(data = County, state = "NC", group = "top", number = 20)
 plot.county(data = County, state = "SC", group = "bottom", number = 7)
 plot.county(data = County)
 plot.county(data = County, state = "PA", group = "top", number = 8)
+```
+
+We are now going to try our functions on similar data sets. To start, we will read in and use our data processing function on four different raw data sets.
+
+```{r}
+urla <- "https://www4.stat.ncsu.edu/~online/datasets/PST01a.csv"
+PST01a <- combine_function(urla, default_var_name = "Enrollment")
+
+urlb <- "https://www4.stat.ncsu.edu/~online/datasets/PST01b.csv"
+PST01b <- combine_function(urlb, default_var_name = "Enrollment")
+
+urlc <- "https://www4.stat.ncsu.edu/~online/datasets/PST01c.csv"
+PST01c <- combine_function(urlc, default_var_name = "Enrollment")
+
+urld <- "https://www4.stat.ncsu.edu/~online/datasets/PST01d.csv"
+PST01d <- combine_function(urld, default_var_name = "Enrollment")
+```
+
+After successfully reading in and parsing our data, we can use our combination function multiple times to get all four data sets into one, and create two final two class data sets.
+
+```{r}
+combine_1 <- final_combine_function(PST01a, PST01b)
+combine_2 <- final_combine_function(combine_1, PST01c)
+PST01     <- final_combine_function(combine_2, PST01d)
+```
+
+Finally, let's run our summarizing functions with different specifications to once again check the flexibility of the functions.
+
+```{r}
+plot.state(PST01[[2]])
+plot.county(PST01[[1]], state = "CA", number = 15)
+plot.county(PST01[[1]], state = "TX", number = 4)
+plot.county(PST01[[1]])
+plot.county(PST01[[1]], number = 10)
 ```
