@@ -89,20 +89,24 @@ ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"
 # Calling it together
 
 ```{r Combine Data, warning=FALSE, show_col_types = FALSE, message=FALSE}
-#First Data set with function:
+#Set a and b
 urla<- "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
-Data_a<-combine_function(urla, default_var_name = "Enrollment")
-
 urlb<- "https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
-Data_b<-combine_function(urlb, default_var_name = "Enrollment")
 
+#Combine the data for Counties and States
+function(urla, urlb){
+  Data_a<-combine_function(urla, default_var_name = "Enrollment")
+  Data_b<-combine_function(urlb, default_var_name = "Enrollment")
 
 Counties<-bind_rows(Data_a[[1]],Data_b[[1]])
 class(Counties) <- c("Counties", class(Counties))
-Counties
 
 States<-bind_rows(Data_a[[2]],Data_b[[2]])
 class(States) <- c("States", class(States))
+return(list(Counties, States))
+}
+
+Counties
 States
 ```
 
@@ -160,8 +164,8 @@ plot.county(data = County)
 
 ```{r}
 plot.state(data = State)
-plot.county(data = County, state = " NC", group = "top", number = 20)
-plot.county(data = County, state = " SC", group = "bottom", number = 7)
+plot.county(data = County, state = "NC", group = "top", number = 20)
+plot.county(data = County, state = "SC", group = "bottom", number = 7)
 plot.county(data = County)
-plot.county(data = County, state = " PA", group = "top", number = 8)
+plot.county(data = County, state = "PA", group = "top", number = 8)
 ```
