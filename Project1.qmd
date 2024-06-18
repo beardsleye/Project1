@@ -1,11 +1,11 @@
-#Project 1 \## By: Emma Beardsley and Kevin Krupa
+#Project 1 
+## By: Emma Beardsley and Kevin Krupa
 
 ```{r Libraries,warning=FALSE}
 library(tidyverse)
 ```
 
 #Data Processing: Data Set 1
-
 ```{r Data Processing, warning=FALSE, show_col_types = FALSE, message=FALSE}
 #Read and make data set with area name, STCOU, Enrollment
 Data_1<-as_tibble(read_csv(file = "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv")) |>
@@ -32,7 +32,7 @@ class(State) <- c("State", class(State))
 County$State_abbr<-substr(County$area_name, nchar(County$area_name)-2, nchar(County$area_name))
 
 #Create Division for state
-State<-mutate(State, Division = ifelse(area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
+State <- mutate(State, Division = ifelse(area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
 ifelse(area_name %in% c("NEW JERSEY", "NEW YORK", "PENNSYLVANIA"), "MID ATLANTIC",
 ifelse(area_name %in% c("ILLINOIS", "INDIANA", "MICHIGAN", "OHIO", "WISCONSIN"), "EAST NORTH CENTRAL",
 ifelse(area_name %in% c("IOWA", "KANSAS", "MINNESOTA","MISSOURI", "NEBRASKA", "NORTH DAKOTA", "SOUTH DAKOTA"), "WEST NORTH CENTRAL",
@@ -44,19 +44,19 @@ ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"
 
 County
 State
-
 ```
 
 # Combining Data Functions: Data Set 2
-
 ```{r Combing Data Functions, warning=FALSE, show_col_types = FALSE, message=FALSE}
 url<-"https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
 combine_function<-function(url , default_var_name= "Enrollment"){
   #read in data
   Data<-as_tibble(read_csv(file= url)) |>
+    
 #step 1 and 2
     select("area_name"=Area_name,STCOU,ends_with("D")) |>
   pivot_longer(cols= 3:12, names_to = "Enrollment", values_to = "Enrollment_Number") |>
+    
  #step 3
     mutate(Course_Year=paste0(substr(Enrollment,1,7),as.character(1900+(as.numeric(substr(Enrollment, 8, 9)))))) |>
     collect()
@@ -104,4 +104,64 @@ Counties
 States<-bind_rows(Data_a[[2]],Data_b[[2]])
 class(States) <- c("States", class(States))
 States
+```
+
+# Task 3: Generic Function for Summarizing
+```{r}
+
+plot.state <- function(data, var_name = "Enrollment_Number") {
+  subset_data <- data |>
+    filter(Division != "ERROR")
+  
+  mean_values <- subset_data |>
+    group_by(Course_Year, Division) |>
+    summarize(mean_value = mean(get(var_name), na.rm = TRUE), .groups = 'drop')
+  
+  ggplot(mean_values, aes(x = Course_Year, y = mean_value, color = Division, group = Division)) +
+    geom_line() +
+    labs(title = paste("Mean", var_name, "Across Years by Division"),
+         x = "Year",
+         y = paste("Mean", var_name))
+}
+
+plot.state(data = State, var_name = "Enrollment_Number")
+
+```
+
+```{r}
+plot.county <- function(data, var_name = "Enrollment_Number", state = " NC", group = "top", number = 5){
+  subset_data <- data |>
+    filter(State_abbr == state)
+  
+  values <- subset_data |>
+    group_by(area_name) |>
+    summarize(value = mean(get(var_name), na.rm = TRUE), .groups = 'drop') |>
+    arrange(if (group == "top") desc(value) else value)
+  
+  counties <- values |>
+    head(number) |>
+    pull(area_name)
+  
+  plot_data <- subset_data |>
+    filter(area_name %in% counties)
+  
+  ggplot(plot_data, aes(x = Course_Year, y = get(var_name), color = area_name, group = area_name)) +
+    geom_line() +
+    labs(title = "Enrollment Number Across Years by County in State",
+         x = "Year",
+         y = "Enrollment Number")
+}
+
+plot.county(data = County)
+
+```
+
+# Putting It All Together
+
+```{r}
+plot.state(data = State)
+plot.county(data = County, state = " NC", group = "top", number = 20)
+plot.county(data = County, state = " SC", group = "bottom", number = 7)
+plot.county(data = County)
+plot.county(data = County, state = " PA", group = "top", number = 8)
 ```
