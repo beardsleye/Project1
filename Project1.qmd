@@ -132,11 +132,13 @@ final_combine_function <- function(a, b){
   States <- bind_rows(a[[2]], b[[2]])
   class(States) <- c("States", class(States))
   
-  return(list(Counties, States))
+  combined_data <- list(Counties, States)
+  
+  return(combined_data)
 }
 
-Counties
-States
+final_combine_function(Data_a, Data_b)
+
 ```
 
 Now that we have successfully combined the raw data and created an object to hold the two new data sets, we can now look to create functions for summarizing.
@@ -146,7 +148,6 @@ Now that we have successfully combined the raw data and created an object to hol
 Since we have our list object with the non-county and county-level data sets , we can look to create functions that produce plots for summarizing important enrollment information. The first function we will create is for the non-county data set. In this function we will produce a plot that expresses the mean value of enrollment across the years for each division. On the x-axis, will be the numeric year value; on the y-axis, will be the mean enrollment number for each division and numeric year. This function will also remove the "ERROR" setting of Division.
 
 ```{r}
-
 plot.state <- function(data, var_name = "Enrollment_Number") {
   # Remove the "ERROR" Division setting
   subset_data <- data |>
@@ -158,14 +159,20 @@ plot.state <- function(data, var_name = "Enrollment_Number") {
     summarize(mean_value = mean(get(var_name), na.rm = TRUE), .groups = 'drop')
   
   #Create the line plot
-  ggplot(mean_values, aes(x = Course_Year, y = mean_value, color = Division,
+  g <- ggplot(mean_values, aes(x = Course_Year, y = mean_value, color = Division,
                           group = Division)) +
     geom_line() +
     labs(title = paste("Mean", var_name, "Across Years by Division"),
          x = "Year",
-         y = paste("Mean", var_name))
+         y = paste("Mean", var_name)) +
+    theme(axis.text.x = element_text(angle = 90))
+  
+  print(g)
 }
 
+plot.class_state_df <- function(df, var_name = "Enrollment_Number") {
+  plot.state(df, var_name)
+}
 ```
 
 Now, for the County class data set, we will produce a similar function, but with more flexibility. The function will allow the user to input several different arguments: Specify the state of interest (default value will be "NC"); Determine whether we want to look at the "top" or "bottom" counties (default value of "top"); Determine how many of the "top" or "bottom" counties we want to look at (default value of 5).
@@ -179,7 +186,9 @@ plot.county <- function(data, var_name = "Enrollment_Number", state = "NC",
   
   #Only include observations from specified state
   subset_data <- data |>
-    filter(State_abbr == state)
+    filter(State_abbr == state) |>
+    mutate(Course_Year = substr(Course_Year, nchar(Course_Year) - 3,
+                                nchar(Course_Year)))
   
   #Obtain overall mean for statistic for each area name and sort 
   values <- subset_data |>
@@ -197,12 +206,20 @@ plot.county <- function(data, var_name = "Enrollment_Number", state = "NC",
     filter(area_name %in% counties)
   
   #Create the line plot
-  ggplot(plot_data, aes(x = Course_Year, y = get(var_name), color = area_name,
-                        group = area_name)) +
+  g <- ggplot(plot_data, aes(x = Course_Year, y = get(var_name),
+                             color = area_name, group = area_name)) +
     geom_line() +
     labs(title = "Enrollment Number Across Years by County in State",
          x = "Year",
-         y = "Enrollment Number")
+         y = "Enrollment Number") +
+    theme(axis.text.x = element_text(angle = 90))
+  
+  print(g)
+}
+
+plot.class_county_df <- function(df, var_name = "Enrollment_Number",
+                                 state = "NC", group = "top", number = 5) {
+  plot.county(df, var_name, state, group, number)
 }
 ```
 
@@ -212,11 +229,11 @@ Both plotting functions have now been successfully created. In the next section,
 
 In the last section of this report, we will be putting all of the previous sections together to show the usage of our functions across multiple raw data sets. To start, we will run our data processing function on the two census bureau data urls we used above. Then, we will run our combination function to combine these two raw data sets to create one object that holds our non-county and county-level data sets.
 
-```{r}
-urla <- "https//www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
+```{r, message = FALSE}
+urla <- "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
 EDU01a <- combine_function(urla, default_var_name = "Enrollment")
 
-urlb <- "https//www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
+urlb <- "https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
 EDU01b <- combine_function(urlb, default_var_name = "Enrollment")
 
 EDU01 <- final_combine_function(EDU01a, EDU01b)
@@ -226,19 +243,21 @@ EDU01
 Now, we will make use of our summarizing functions that creates plots. We run these functions multiple times, specifying different values to our arguments to check the flexibility of the functions.
 
 ```{r}
-County <- EDU01[[1]]
-State <- EDU01[[2]]
+class_county_df <- EDU01[[1]]
+class(class_county_df) <- c("class_county_df", class(class_county_df))
+class_state_df  <- EDU01[[2]]
+class(class_state_df) <- c("class_state_df", class(class_state_df))
 
-plot.state(data = State)
-plot.county(data = County, state = "NC", group = "top", number = 20)
-plot.county(data = County, state = "SC", group = "bottom", number = 7)
-plot.county(data = County)
-plot.county(data = County, state = "PA", group = "top", number = 8)
+plot(class_state_df)
+plot(class_county_df, state = "NC", group = "top", number = 20)
+plot(class_county_df, state = "SC", group = "bottom", number = 7)
+plot(class_county_df)
+plot(class_county_df, state = "PA", group = "top", number = 8)
 ```
 
 We are now going to try our functions on similar data sets. To start, we will read in and use our data processing function on four different raw data sets.
 
-```{r}
+```{r, message = FALSE}
 urla <- "https://www4.stat.ncsu.edu/~online/datasets/PST01a.csv"
 PST01a <- combine_function(urla, default_var_name = "Enrollment")
 
@@ -258,14 +277,21 @@ After successfully reading in and parsing our data, we can use our combination f
 combine_1 <- final_combine_function(PST01a, PST01b)
 combine_2 <- final_combine_function(combine_1, PST01c)
 PST01     <- final_combine_function(combine_2, PST01d)
+
+PST01
 ```
 
 Finally, let's run our summarizing functions with different specifications to once again check the flexibility of the functions.
 
 ```{r}
-plot.state(PST01[[2]])
-plot.county(PST01[[1]], state = "CA", number = 15)
-plot.county(PST01[[1]], state = "TX", number = 4)
-plot.county(PST01[[1]])
-plot.county(PST01[[1]], number = 10)
+class_county_df <- PST01[[1]]
+class(class_county_df) <- c("class_county_df", class(class_county_df))
+class_state_df  <- PST01[[2]]
+class(class_state_df) <- c("class_state_df", class(class_state_df))
+
+plot(class_state_df)
+plot(class_county_df, state = "CA", number = 15)
+plot(class_county_df, state = "TX", number = 4)
+plot(class_county_df)
+plot(class_county_df, state = "NY", number = 10)
 ```
