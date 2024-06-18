@@ -7,45 +7,50 @@ format:
     toc-depth: 2
 ---
 
+# Introduction
+
+Throughout the first couple weeks of this course, we have been learning how to effectively program in R. Many of the topics of discussion revolve around the topic of Data Science, and how to use it to work with data in a way in which almost tells a story. In this project, we will be doing just that. Over the course of this report, we will be working through the process of working with raw data to create clean data sets that can be used to create summaries through plots.
+
 # Packages
 
 For this project, we will be working with raw data to perform cleaning, wrangling, and operations. We will work through this primarily using the tidyverse library, so we will read in this package first.
 
-```{r Libraries,warning=FALSE}
+```{r Libraries, echo = FALSE, warning = FALSE}
 library(tidyverse)
 ```
 
-# Data Processing: Data Set 1
+# Data Processing
 
-As mentioned above, we will be using multiple `.csv` files that contain information obtained from the census bureau. The data is from 2010, and our first goal will be to read in one of these data sets and perform some necessary cleaning/wrangling. Comments will be written throughout the code below, to detail the operations performed on the raw data.
+As mentioned above, we will be using multiple `.csv` files that contain information obtained from the census bureau. The data is from 2010, and our first goal will be to read in one of these data sets and perform some necessary cleaning/wrangling. There are many variables in this data set, but we will only want to look at *Area_name*, *STCOU*, and any variable that ends in *"D"*. Also, the data is originally in wide-format, but we know that statistical analysis are usually performed on long-format data. So, we will include code that changes the data from wide to long format (each row only has one enrollment value for a specific area name). We will also want to create some new variables here that will be useful later on in the report. The final result of this section will be two data sets: one that contains only non-county data, and one that contains only county-level data.
 
 ```{r Data Processing, warning=FALSE, show_col_types = FALSE, message=FALSE}
 #Read and make data set with area name, STCOU, Enrollment
-Data_1<-as_tibble(read_csv(file = "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv")) |>
+Data_1 <- as_tibble(read_csv(file = "https://www4.stat.ncsu.edu/~online/datasets/EDU01a.csv")) |>
   select("area_name"=Area_name,STCOU,ends_with("D")) |>
   pivot_longer(cols= 3:12, names_to = "Enrollment", values_to = "Enrollment_Number") 
 
 #Create Column that has course and year together
-Year_digits<-as.numeric(substr(Data_1$Enrollment, 8, 9))
-Year<- as.character(1900+Year_digits)
-Course<-substr(Data_1$Enrollment,1,7)
-Data_1$Course_Year<-paste0(Course,Year)
+Year_digits <- as.numeric(substr(Data_1$Enrollment, 8, 9))
+Year <- as.character(1900+Year_digits)
+Course <- substr(Data_1$Enrollment,1,7)
+Data_1$Course_Year <- paste0(Course,Year)
 
 #Identify rows for counties
-County_entries<-grep(pattern = ", \\w\\w", Data_1$area_name)
+County_entries <- grep(pattern = ", \\w\\w", Data_1$area_name)
 
 #Create,output, and give class to County and State data sets
-County<-Data_1[County_entries,]
+County <- Data_1[County_entries,]
 class(County) <- c("County", class(County))
 
-State<-Data_1[-County_entries,]
+State <- Data_1[-County_entries,]
 class(State) <- c("State", class(State))
 
 #Create State variable for county
-County$State_abbr<-substr(County$area_name, nchar(County$area_name)-2, nchar(County$area_name))
+County$State_abbr <- substr(County$area_name, nchar(County$area_name)-2, nchar(County$area_name))
 
 #Create Division for state
-State <- mutate(State, Division = ifelse(area_name %in% c("CONNECTICUT","MAINE","MASSACHUSETTS", "NEW HAMPSHIRE", "RHODE ISLAND","VERMONT"), "NEW ENGLAND", 
+State <- mutate(State, Division = ifelse(area_name %in% c("CONNECTICUT","MAINE",
+"MASSACHUSETTS", "NEW HAMPSHIRE","RHODE ISLAND","VERMONT"),"NEW ENGLAND",
 ifelse(area_name %in% c("NEW JERSEY", "NEW YORK", "PENNSYLVANIA"), "MID ATLANTIC",
 ifelse(area_name %in% c("ILLINOIS", "INDIANA", "MICHIGAN", "OHIO", "WISCONSIN"), "EAST NORTH CENTRAL",
 ifelse(area_name %in% c("IOWA", "KANSAS", "MINNESOTA","MISSOURI", "NEBRASKA", "NORTH DAKOTA", "SOUTH DAKOTA"), "WEST NORTH CENTRAL",
@@ -59,11 +64,13 @@ County
 State
 ```
 
-Now that we have successfully parsed through the data set, as described in the project 1 file, we will perform this on another data set. Though it will be done differently
+Now that we have successfully parsed through the data set, as described above, we have created our non-county (state) and county-level datasets. In the next section, we will perform the same operations; however, it will be done differently.
 
-# Combining Data Functions: Data Set 2
+# Data Processing/Combination Functions 
 
-For the second raw dataset, we will parse through the data as done before; however, it will be done by using functions to perform each of the steps you saw in the previous section.
+## Data Processing Functions
+
+For the second raw data set, we will parse through the data as done before; however, it will be done by using functions to perform each of the steps you saw in the previous section. Using functions allows our code to become more flexible and concise. Instead of writing long sections of code over and over again, we can write a function that performs many operations and use it throughout the program. This concept will be detailed here.
 
 ```{r Combing Data Functions, warning=FALSE, show_col_types = FALSE, message=FALSE}
 url<-"https://www4.stat.ncsu.edu/~online/datasets/EDU01b.csv"
@@ -104,11 +111,11 @@ ifelse(area_name %in% c("ALASKA", "CALIFORNIA", "HAWAII", "OREGON", "WASHINGTON"
 }
 ```
 
-Now that we have successfully created this function, we will now combine the two data sets together.
+Now that we have created a function that parses through the data set as needed, we can then apply it to different data sets. This will be detailed in the next section
 
-# Calling it together
+## Data Combination Function
 
-In this section, we will use our newly created data processing function to read in and parse through the two raw data sets. After calling this function twice, we will then create a new function to combine the two data sets, and create a list of the final two data sets we are looking for.
+In this section, we will use our newly created data processing function to read in and parse through the two raw data sets. These two raw data sets are very similar, and we want to be able to combine the non-county and county-level data from each data set. This provides the need to create a new function, that takes in the result of the two calls to the data processing function and combines the two non-county and two county-level data sets. The result of this function should be one object, that holds the combined non-county and county-level data sets.
 
 ```{r Combine Data, warning=FALSE, show_col_types = FALSE, message=FALSE}
 #Set a and b
@@ -132,11 +139,11 @@ Counties
 States
 ```
 
-Now that we have successfully combined the raw data and created an object to hold the two new data sets, we can now look to create functions for summarizing
+Now that we have successfully combined the raw data and created an object to hold the two new data sets, we can now look to create functions for summarizing.
 
-# Task 3: Generic Function for Summarizing
+# Generic Functions For Summarizing Data
 
-Since we have our list object with the two class data sets (County and State), we can look to create functions that produce plots for summarizing important enrollment information. The first function we will create is for the state class data set. In this function we will produce a plot that expresses the mean value of enrollment across the years for each division. On the x-axis, will be the numeric year value; on the y-axis, will be the mean enrollment number for each division and numeric year. This function will also remove the "ERROR" setting of Division.
+Since we have our list object with the non-county and county-level data sets , we can look to create functions that produce plots for summarizing important enrollment information. The first function we will create is for the non-county data set. In this function we will produce a plot that expresses the mean value of enrollment across the years for each division. On the x-axis, will be the numeric year value; on the y-axis, will be the mean enrollment number for each division and numeric year. This function will also remove the "ERROR" setting of Division.
 
 ```{r}
 
@@ -163,7 +170,7 @@ plot.state <- function(data, var_name = "Enrollment_Number") {
 
 Now, for the County class data set, we will produce a similar function, but with more flexibility. The function will allow the user to input several different arguments: Specify the state of interest (default value will be "NC"); Determine whether we want to look at the "top" or "bottom" counties (default value of "top"); Determine how many of the "top" or "bottom" counties we want to look at (default value of 5).
 
-Within this function, we will find the overall mean of the statistic for each `Area_name` and sort the values from largest to smallest if "top" is specified, or smallest to largest if "bottom" is specified. We will obtain the top or bottom *x* number of area names from the previous step where *x* is one of the arguments the user can specify. Lastly, we will fulter the data for this state to noly include the area name's from the previous step. This last step will be the data we will use to plot. 
+Within this function, we will find the overall mean of the statistic for each `Area_name` and sort the values from largest to smallest if "top" is specified, or smallest to largest if "bottom" is specified. We will obtain the top or bottom *x* number of area names from the previous step where *x* is one of the arguments the user can specify. Lastly, we will filter the data for this state to only include the area name's from the previous step. This last step will be the data we will use to plot.
 
 ```{r}
 plot.county <- function(data, var_name = "Enrollment_Number", state = "NC",
@@ -199,9 +206,11 @@ plot.county <- function(data, var_name = "Enrollment_Number", state = "NC",
 }
 ```
 
+Both plotting functions have now been successfully created. In the next section, we will detail the flexibility of these functions and see how they work on multiple different raw .csv files.
+
 # Putting It All Together
 
-In the last section of this report, we will be putting all of the previous sections together to show the usage of our functions across multiple raw data sets. To start, we will run our data processing function on the two census bureau data url's we used above. Then, we will run our combination function to combine these two raw data sets to create one object that holds our two class data sets (County and State). 
+In the last section of this report, we will be putting all of the previous sections together to show the usage of our functions across multiple raw data sets. To start, we will run our data processing function on the two census bureau data urls we used above. Then, we will run our combination function to combine these two raw data sets to create one object that holds our non-county and county-level data sets.
 
 ```{r}
 urla <- "https//www4.stat.ncsu.edu/~online/datasets/EDU01a.csv"
